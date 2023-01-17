@@ -1,11 +1,11 @@
 #-------------------------------------------------------------------------------------------------
 #
-#   IMAGE TO VHDL CONVERSION SCRIPT
+#   IMAGE TO C ARRAY CONVERSION SCRIPT
 #
 #   Created by Chris Major
-#   11/14/22
+#   1/5/23
 #
-#   A Python script that can convert an image into a VHDL ROM component
+#   A Python script that can convert an image into a C array of uint32 values
 #
 #-------------------------------------------------------------------------------------------------
 
@@ -23,7 +23,7 @@ import binascii
 #-------------------------------------------------------------------------------------------------
 
 # Path to the image (change to the image of your choice!)
-path = "bird_01__32x32.png"
+path = "moon3_square_light_16x16.png"
 
 # Open the image
 image = Image.open( "images/" + path )
@@ -31,24 +31,19 @@ pixels = image.load()
 
 # Set image limits
 x_max, y_max = image.size
-#x_max = 32
-#y_max = 32
 
+# Print the pixels
 print(pixels)
 
 # Create and open the output file
-output_file_name = "exports/" + path[:-4] + ".txt"
+output_file_name = "exports/" + path[:-4] + "_c_array.txt"
 output = open( output_file_name, "w" )
 
 # Create dimension constants for image
-output.write( "constant c_WIDTH : integer := " + str(x_max) + "\n" )
-output.write( "constant c_HEIGHT : integer := " + str(y_max) + "\n\n" )
-
-# Create a type for the array
-output.write( "type t_image_array is array ( 0 to (c_HEIGHT - 1), 0 to (c_WIDTH - 1) ) of std_logic_vector( (12 - 1) downto 0);\n\n" )
+output.write( "// Array to represent image \"" + path + "\"\n" )
 
 # Create the array header
-output.write( "signal r_image_data	: t_image_array := (\n" )
+output.write( "uint32_t " + path[:-4] + "_image[" + str(y_max) + "][" + str(x_max) + "] = " + "\n{\n" )
 
 # Print status message
 print( "Converting image ..." )
@@ -56,7 +51,7 @@ print( "Converting image ..." )
 # Iterate through the columns
 for y in range(y_max):
     
-    output.write( "\t\t( " )
+    output.write( "\t{ " )
     
     # Iterate through the rows
     for x in range(x_max):
@@ -65,8 +60,8 @@ for y in range(y_max):
         r, g, b, a = pixels[x, y]
         val = "{:02x}{:02x}{:02x}".format( r, g, b)
 
-        # Convert into a hex value
-        hex = "x\"" + val[0] + val[2] + val[4] + "\""
+        # Convert into a hex value of 32 bits
+        hex = "0x00" + val.upper()
         print( "\t" + val + " --> " + hex )
 
         # Check if current pixel is at the end of the row
@@ -77,12 +72,12 @@ for y in range(y_max):
 
     # Check if current pixel is at the end of the column
     if y == (y_max - 1):
-        output.write( ")\n" )
+        output.write( "}\n" )
     else:
-        output.write( "),\n" )
+        output.write( "},\n" )
 
 # Write end of file
-output.write( ");\n" )
+output.write( "};\n" )
 
 # Print final message
 print( "Image conversion completed!" )
